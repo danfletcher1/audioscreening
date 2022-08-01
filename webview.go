@@ -20,7 +20,7 @@ import (
 
 	"github.com/mjibson/go-dsp/spectral"
 	"github.com/mjibson/go-dsp/wav"
-	webskt "inf-stash-01.gammatelecom.com/scm/df/pkg_websocket"
+	webskt "github.com/danfletcher1/pkg_websocket"
 )
 
 // Trap SIGINT to trigger a shutdown
