@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" >
+
+// Always use strict mode prevents bad practices
+'use strict';
+
+var socket;
+var datapoints = [];
+var gain = 1000000;
+
+function sleep(milliseconds) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
+
+function gain_up() {
+	gain = gain*2
+}
+function gain_down() {
+	gain = gain/2
+}
+function init() {
+	var host = "ws://localhost:8000/ws"; // SET THIS TO YOUR SERVER
+ 
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+    ctx.lineWidth = 1;
+    ctx.lineCap = "round";
+
+try {
+		socket = new WebSocket(host);
+		log('WebSocket - status '+socket.readyState);
+		socket.onopen    = function(msg) {
+							   log("Receiving data...");
+						   };
+
+		socket.onmessage = function(msg) {
+
+		//	log(msg.data);
+
+		  var JSONObject = JSON.parse(msg.data);
+		  var table = document.getElementById("myTable");
+		  
+ 
+			ctx.clearRect(0, 0, c.width, c.height);
+			
+			datapoints = JSONObject["data"].split(",");
+			ctx.moveTo(0, 0);
+			ctx.beginPath();
+			ctx.strokeStyle="#FF0000";
+			
+			for (var i = 0; i < datapoints.length; i++)
+			{
+				var kv = datapoints[i].split("=");
+				ctx.lineTo(kv[0]/19, c.height-kv[1]*gain);
+				ctx.stroke();
+			}
+
+
+		};
+
+		socket.onclose   = function(msg) {
+		  log("Disconnected - status "+this.readyState);
+		 // setInterval(reconnect,10000);
+		};
+	}
+	catch(ex){ log(ex);}
+	//$("username").focus();
+}
+
+function quit(){
+	if (socket != null) {
+		log("Goodbye!");
+		socket.close();
+		socket=null;
+	}
+}
+
+function reconnect() {
+	quit();
+	init();
+}
+
+function listen() {
+  var msg = {
+    event: "Listen",
+    data: document.getElementById('listen_event').value
+  };
+  socket.send(JSON.stringify(msg));
+}
+
+function stop_listen() {
+  var msg = {
+    event: "StopListen",
+    data: document.getElementById('listen_event').value
+  };
+  socket.send(JSON.stringify(msg));
+}
+
+function refresh() {
+	var msg = {
+  	event: "Refresh",
+  };
+	socket.send(JSON.stringify(msg));
+}
+
+function pong() {
+	var msg = {
+		event: "Pong",
+  };
+  socket.send(JSON.stringify(msg));
+}
+
+
+// Utilities
+function $(id){ return document.getElementById(id); }
+function log(msg){ $("log").innerHTML+="<br>"+msg; }
+//function onkey(event){ if(event.keyCode==13){ send(); } }
+</script>
+
+<title>WebSockets Client</title>
+</head>
+<body onload="init()">
+
+<input type="text" id="listen_event">
+<button onclick="listen()">Listen Now</button>
+<button onclick="stop_listen()">Stop Now</button>
+<button onclick="gain_up()">+</button>
+<button onclick="gain_down()">-</button>
+
+<canvas id="myCanvas" width="1200" height="300" style="border:2px solid #d3d3d3;">
+    Your browser does not support the HTML5 canvas tag.</canvas>
+<br>
+
+
+  <div id="log"></div>
+</body>
+</html>
